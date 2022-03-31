@@ -39,7 +39,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import async_only_middleware
 from django.views.generic import RedirectView
 
-from .views import TwoArgException, get_view, post_view, trace_view
+from .views import TwoArgException, get_view, post_view, trace_view, upload_view
 
 
 def middleware_urlconf(get_response):
@@ -1036,6 +1036,14 @@ class RequestFactoryTest(SimpleTestCase):
         request = self.request_factory.get("/somewhere/")
         response = get_view(request)
         self.assertContains(response, "This is a test")
+
+    def test_post_with_upload_from_factory(self):
+        """Temporary files created during a POST are closed."""
+        with tempfile.TemporaryFile() as test_file:
+            post_data = {"file": test_file}
+            request = self.request_factory.post("/somewhere/", data=post_data)
+            upload_view(request)
+        self.assertTrue(request.FILES["file"].closed)
 
     def test_trace_request_from_factory(self):
         """The request factory returns an echo response for a TRACE request."""
